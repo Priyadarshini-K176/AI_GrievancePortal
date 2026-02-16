@@ -1,0 +1,140 @@
+/* Top Bar */
+.gov-header {
+    background-color: white;
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.top-bar {
+    background-color: white;
+    border-bottom: 4px solid var(--gov-gold);
+    padding: 0.75rem 0;
+}
+
+.top-bar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gov-branding {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.emblem {
+    height: 50px;
+    width: auto;
+}
+
+.branding-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.gov-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gov-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.portal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.lang-toggle {
+    background: transparent;
+    border: 1px solid var(--gov-blue-light);
+    color: var(--gov-blue);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.lang-toggle:hover {
+    background-color: #ebf8ff;
+}
+
+/* Main Nav */
+.main-nav {
+    background-color: var(--gov-blue);
+    color: white;
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.nav-logo-link {
+    font-weight: 600;
+    color: white !important;
+    font-size: 1rem;
+}
+
+.nav-item {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    color: white !important;
+    border-bottom-color: var(--gov-gold);
+}
+
+.active-btn {
+    background-color: var(--gov-gold);
+    color: var(--gov-blue) !important;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.active-btn:hover {
+    background-color: #ecc94b;
+    border-bottom-color: transparent;
+}
+
+.btn-register {
+    border: 1px solid white;
+    padding: 0.3rem 1rem;
+    border-radius: 4px;
+}
+
+.btn-register:hover {
+    background-color: white;
+    color: var(--gov-blue) !important;
+}
+
+.logout-link {
+    color: #feb2b2 !important;
+    /* Light Red */
+}
+
+.logout-link:hover {
+    color: white !important;
+}

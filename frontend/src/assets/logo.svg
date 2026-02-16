@@ -1,0 +1,5 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="90" fill="#1a365d" stroke="#d69e2e" stroke-width="8"/>
+  <path d="M60 100 L90 130 L150 70" stroke="#d69e2e" stroke-width="15" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#ffffff" font-weight="bold">GRIEVANCE</text>
+</svg>

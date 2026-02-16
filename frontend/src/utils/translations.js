@@ -1,0 +1,42 @@
+export const translations = {
+    en: {
+        title: "TN Grievance Portal",
+        fileGrievance: "File New Grievance",
+        myGrievances: "My Grievances",
+        welcome: "Welcome",
+        logout: "Logout",
+        login: "Login",
+        register: "Register",
+        status: "Status",
+        category: "Category",
+        jurisdiction: "Jurisdiction",
+        description: "Describe your issue",
+        submit: "Submit Grievance",
+        mic: "Click microphone to speak",
+        rate: "Rate Service",
+        resolved: "Resolved",
+        assigned: "Assigned",
+        registered: "Registered",
+        overdue: "Overdue"
+    },
+    ta: {
+        title: "தமிழ்நாடு குறைதீர்ப்பு தளம்",
+        fileGrievance: "புதிய குறைகளைப் பதிவுசெய்க",
+        myGrievances: "எனது குறைகள்",
+        welcome: "வணக்கம்",
+        logout: "வெளியேறு",
+        login: "உள்நுழைய",
+        register: "பதிவு",
+        status: "நிலை",
+        category: "வகை",
+        jurisdiction: "அதிகார வரம்பு",
+        description: "உங்கள் பிரச்சனையை விவரிக்கவும்",
+        submit: "சமர்ப்பிக்கவும்",
+        mic: "பேச மைக்ரோஃபோனை அழுத்தவும்",
+        rate: "சேவையை மதிப்பிடவும்",
+        resolved: "தீர்க்கப்பட்டது",
+        assigned: "ஒதுக்கப்பட்டது",
+        registered: "பதிவு செய்யப்பட்டது",
+        overdue: "காலக்கெடு முடிந்தது"
+    }
+};
