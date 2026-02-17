@@ -77,6 +77,18 @@ const AuthorityDashboard = () => {
                                     <td>
                                         {selectedGrievance === g._id ? (
                                             <div className="action-box">
+                                                <div className="grievance-details-expanded">
+                                                    <h4>Full Details</h4>
+                                                    <div className="details-grid">
+                                                        <p><strong>Category:</strong> {g.category} - {g.subType}</p>
+                                                        <p><strong>Urgency:</strong> {g.urgency}</p>
+                                                        <p><strong>Petitioner:</strong> {g.citizenId?.name} ({g.petitionerType})</p>
+                                                        <p><strong>Mobile:</strong> {g.citizenId?.phone}</p>
+                                                        <p><strong>Address:</strong> {g.address}, {g.area}</p>
+                                                        <p><strong>Location:</strong> {g.villagePanchayat || g.localBodyType}, {g.taluk}</p>
+                                                        <p><strong>Description:</strong> {g.text}</p>
+                                                    </div>
+                                                </div>
                                                 <select onChange={(e) => handleUpdateStatus(g._id, e.target.value)}>
                                                     <option value="">Update Status...</option>
                                                     <option value="Action Taken">Action Taken</option>

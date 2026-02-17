@@ -24,8 +24,8 @@ const Navbar = () => {
                     <div className="gov-branding">
                         <img src={logo} alt="Portal Logo" className="emblem" />
                         <div className="branding-text">
-                            <span className="portal-title">Public Grievance Redressal Portal</span>
-                            <span className="gov-title">AI-Powered Citizen Services</span>
+                            <span className="portal-title">{t('portalTitle')}</span>
+                            <span className="gov-title">{t('govTitle')}</span>
                         </div>
                     </div>
                     <div className="top-actions">
@@ -39,7 +39,7 @@ const Navbar = () => {
             {/* Main Navigation */}
             <nav className="main-nav">
                 <div className="container nav-content">
-                    <Link to="/" className="nav-logo-link">Home</Link>
+                    <Link to="/" className="nav-logo-link">{t('home')}</Link>
                     <div className="nav-links">
                         {!user ? (
                             <>
@@ -54,8 +54,8 @@ const Navbar = () => {
                                         <Link to="/submit-grievance" className="nav-item active-btn">{t('fileGrievance')}</Link>
                                     </>
                                 )}
-                                {user.role === 'authority' && <Link to="/authority/dashboard" className="nav-item">Authority Panel</Link>}
-                                {user.role === 'admin' && <Link to="/admin/dashboard" className="nav-item">Admin Panel</Link>}
+                                {user.role === 'authority' && <Link to="/authority/dashboard" className="nav-item">{t('authorityPanel')}</Link>}
+                                {user.role === 'admin' && <Link to="/admin/dashboard" className="nav-item">{t('adminPanel')}</Link>}
                                 <button onClick={handleLogout} className="nav-item logout-link">{t('logout')}</button>
                             </>
                         )}

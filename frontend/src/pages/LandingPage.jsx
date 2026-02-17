@@ -1,17 +1,19 @@
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import '../styles/LandingPage.css';
 
 const LandingPage = () => {
+    const { t } = useLanguage();
     return (
         <div className="landing-container">
             {/* Hero Section */}
             <header className="hero">
                 <div className="hero-content">
-                    <h1>Public Grievance Redressal Portal</h1>
-                    <p>Bridging the gap between Citizens and Government with AI & Transparency</p>
+                    <h1>{t('lpTitle')}</h1>
+                    <p>{t('lpSubtitle')}</p>
                     <div className="cta-buttons">
-                        <Link to="/submit-grievance" className="btn-primary hero-btn">File a Grievance</Link>
-                        <Link to="/login" className="btn-secondary hero-btn-outline">Track Status</Link>
+                        <Link to="/submit-grievance" className="btn-primary hero-btn">{t('fileGrievanceBtn')}</Link>
+                        <Link to="/login" className="btn-secondary hero-btn-outline">{t('trackStatusBtn')}</Link>
                     </div>
                 </div>
             </header>
@@ -36,7 +38,7 @@ const LandingPage = () => {
 
             {/* Features / Process */}
             <section className="features container">
-                <h2 className="section-title">How It Works</h2>
+                <h2 className="section-title">{t('howItWorks')}</h2>
                 <div className="feature-grid">
                     <div className="feature-card">
                         <div className="icon-box">🎙️</div>

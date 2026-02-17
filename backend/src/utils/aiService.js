@@ -1,19 +1,50 @@
-// Simple keyword-based classification to simulate AI/ML model
+const { spawn } = require('child_process');
+const path = require('path');
+
 const classifyGrievance = (text) => {
-    const lowerText = text.toLowerCase();
+    return new Promise((resolve, reject) => {
+        if (!text) return resolve({ category: 'Unclassified', subType: 'Other' });
 
-    // Departments
-    if (lowerText.includes('water') || lowerText.includes('leak') || lowerText.includes('pipe') || lowerText.includes('drain')) return 'Water';
-    if (lowerText.includes('road') || lowerText.includes('pothole') || lowerText.includes('street') || lowerText.includes('traffic')) return 'Roads';
-    if (lowerText.includes('electric') || lowerText.includes('power') || lowerText.includes('light') || lowerText.includes('pole')) return 'Electricity';
-    if (lowerText.includes('garbage') || lowerText.includes('trash') || lowerText.includes('clean') || lowerText.includes('dustbin')) return 'Sanitation';
+        const scriptPath = path.join(__dirname, '../../ml/predict.py');
+        const pythonProcess = spawn('python', [scriptPath, text]);
 
-    return 'General';
+        let dataString = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            dataString += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Python Stderr: ${data}`);
+        });
+
+        pythonProcess.on('close', (code) => {
+            if (code !== 0) {
+                console.error(`Python process exited with code ${code}`);
+                return resolve({ category: 'Unclassified', subType: 'Other' }); // Fallback
+            }
+
+            try {
+                const result = JSON.parse(dataString);
+                if (result.error) {
+                    console.error('ML Error:', result.error);
+                    return resolve({ category: 'Unclassified', subType: 'Other' });
+                }
+                resolve({
+                    category: result.department,
+                    subType: result.subtype
+                });
+            } catch (err) {
+                console.error('Error parsing ML output:', err);
+                resolve({ category: 'Unclassified', subType: 'Other' });
+            }
+        });
+    });
 };
 
 const predictUrgency = (text) => {
     const lowerText = text.toLowerCase();
-    const urgentKeywords = ['urgent', 'emergency', 'dangerous', 'danger', 'accident', 'fire', 'immediately', 'critical', 'severe'];
+    const urgentKeywords = ['urgent', 'emergency', 'dangerous', 'danger', 'accident', 'fire', 'immediately', 'critical', 'severe', 'death', 'blood', 'injury'];
 
     if (urgentKeywords.some(keyword => lowerText.includes(keyword))) {
         return 'High';

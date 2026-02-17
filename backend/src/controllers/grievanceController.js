@@ -11,10 +11,22 @@ const fs = require('fs');
 const submitGrievance = async (req, res) => {
     try {
         console.log('Submit Grievance User:', req.user); // DEBUG LOG
-        const { text, category, subType, urgency, area, jurisdiction } = req.body; // Added area
+        const {
+            text, category, subType, urgency, area, jurisdiction,
+            gender, differentlyAbled, petitionerType, address, communicationAddress,
+            localBodyType, subDepartment, taluk, revenueDivision, firka, villagePanchayat, responsibleOfficer
+        } = req.body;
 
-        // AI/ML Classification (Mock)
-        const detectedCategory = (category === 'General' || !category) ? classifyGrievance(text) : category;
+        // AI/ML Classification
+        let detectedCategory = category;
+        let detectedSubType = subType;
+
+        if (category === 'General' || !category) {
+            const classification = await classifyGrievance(text);
+            detectedCategory = classification.category;
+            detectedSubType = classification.subType || subType; // Use predicted if available, else existing
+        }
+
         const detectedUrgency = (urgency === 'Normal' || !urgency) ? predictUrgency(text) : urgency;
 
         // SMART ROUTING: Find Authority matching Dept + Jurisdiction
@@ -27,12 +39,28 @@ const submitGrievance = async (req, res) => {
         const grievance = await Grievance.create({
             citizenId: req.user._id,
             text,
+            text,
             category: detectedCategory,
-            subType: subType, // Added subType
+            subType: detectedSubType, // Use detected or provided subType
             urgency: detectedUrgency,
             photoUrl: req.file ? `/uploads/${req.file.filename}` : null,
             jurisdiction: jurisdiction || 'General', // Fallback
             area: area || 'Not Specified', // Added Area
+
+            // New Fields
+            gender,
+            differentlyAbled,
+            petitionerType,
+            address,
+            communicationAddress,
+            localBodyType,
+            subDepartment,
+            taluk,
+            revenueDivision,
+            firka,
+            villagePanchayat,
+            responsibleOfficer,
+
             currentDepartment: detectedCategory,
             currentAuthority: assignedAuthority ? assignedAuthority._id : null,
             status: assignedAuthority ? 'Assigned' : 'Registered'

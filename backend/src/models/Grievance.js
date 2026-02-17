@@ -10,6 +10,21 @@ const grievanceSchema = new mongoose.Schema({
     urgency: { type: String, default: 'Normal' }, // ML Populated
     jurisdiction: { type: String, required: true }, // Added for Routing (Area/Zone)
     area: { type: String, required: true }, // Added for Street/Specific Location
+
+    // New Fields (Expanded Form)
+    gender: { type: String },
+    differentlyAbled: { type: String, default: 'No' }, // 'Yes' or 'No'
+    petitionerType: { type: String, default: 'Public' }, // 'Public', 'Individual', 'Association'
+    address: { type: String }, // Petitioner Address
+    communicationAddress: { type: String },
+    localBodyType: { type: String },
+    subDepartment: { type: String },
+    taluk: { type: String },
+    revenueDivision: { type: String },
+    firka: { type: String },
+    villagePanchayat: { type: String },
+    responsibleOfficer: { type: String },
+
     currentDepartment: { type: String },
     currentAuthority: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: {

@@ -7,6 +7,7 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('authorities');
     const [authorities, setAuthorities] = useState([]);
     const [grievances, setGrievances] = useState([]);
+    const [expandedRow, setExpandedRow] = useState(null); // For view details
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -138,29 +139,83 @@ const AdminDashboard = () => {
                                 <th>Evidence</th>
                                 <th>Zone</th>
                                 <th>Status</th>
+                                <th>Status</th>
                                 <th>Assigned To</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {grievances.map(g => {
                                 const isOverdue = new Date(g.slaDeadline) < new Date() && g.status !== 'Resolved' && g.status !== 'Closed';
                                 return (
-                                    <tr key={g._id}>
-                                        <td>{g.grievanceId}</td>
-                                        <td>{g.citizenId?.name}</td>
-                                        <td>{g.currentDepartment}</td>
-                                        <td>
-                                            {g.photoUrl ? (
-                                                <a href={`http://localhost:5000${g.photoUrl}`} target="_blank" rel="noopener noreferrer">View</a>
-                                            ) : '-'}
-                                        </td>
-                                        <td>{g.jurisdiction}</td>
-                                        <td>
-                                            <span className={`status ${g.status.toLowerCase().replace(' ', '-')}`}>{g.status}</span>
-                                            {isOverdue && <span className="status overdue" style={{ marginLeft: '8px', fontSize: '0.6rem' }}>OVERDUE</span>}
-                                        </td>
-                                        <td>{authorities.find(a => a._id === g.currentAuthority)?.name || 'Unassigned'}</td>
-                                    </tr>
+                                    <>
+                                        <tr key={g._id}>
+                                            <td>{g.grievanceId}</td>
+                                            <td>{g.citizenId?.name}</td>
+                                            <td>{g.currentDepartment}</td>
+                                            <td>
+                                                {g.photoUrl ? (
+                                                    <a href={`http://localhost:5000${g.photoUrl}`} target="_blank" rel="noopener noreferrer">View</a>
+                                                ) : '-'}
+                                            </td>
+                                            <td>{g.jurisdiction}</td>
+                                            <td>
+                                                <span className={`status ${g.status.toLowerCase().replace(' ', '-')}`}>{g.status}</span>
+                                                {isOverdue && <span className="status overdue" style={{ marginLeft: '8px', fontSize: '0.6rem' }}>OVERDUE</span>}
+                                            </td>
+                                            <td>{authorities.find(a => a._id === g.currentAuthority)?.name || 'Unassigned'}</td>
+                                            <td>
+                                                <button
+                                                    onClick={() => setExpandedRow(expandedRow === g._id ? null : g._id)}
+                                                    className="btn-view"
+                                                >
+                                                    {expandedRow === g._id ? 'Hide' : 'View'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {expandedRow === g._id && (
+                                            <tr className="expanded-row">
+                                                <td colSpan="8">
+                                                    <div className="details-expanded">
+                                                        <h4>Grievance Details</h4>
+                                                        <div className="details-grid">
+                                                            <div className="detail-item">
+                                                                <strong>Sub-Type:</strong> {g.subType || '-'}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Urgency:</strong> {g.urgency}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Area:</strong> {g.area}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Address:</strong> {g.address}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Petitioner Type:</strong> {g.petitionerType}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Gender:</strong> {g.gender || '-'}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Disability:</strong> {g.differentlyAbled}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Local Body:</strong> {g.localBodyType || '-'}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Taluk:</strong> {g.taluk || '-'}
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <strong>Full Description:</strong>
+                                                                <p style={{ marginTop: '5px' }}>{g.text}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
                                 )
                             })}
                         </tbody>
