@@ -1,6 +1,9 @@
 const Grievance = require('../models/Grievance');
 const User = require('../models/User');
 const { classifyGrievance, predictUrgency } = require('../utils/aiService');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
 // @desc    Submit a grievance
 // @route   POST /api/grievances
@@ -8,7 +11,7 @@ const { classifyGrievance, predictUrgency } = require('../utils/aiService');
 const submitGrievance = async (req, res) => {
     try {
         console.log('Submit Grievance User:', req.user); // DEBUG LOG
-        const { text, category, urgency, location, jurisdiction } = req.body; // Added jurisdiction
+        const { text, category, subType, urgency, area, jurisdiction } = req.body; // Added area
 
         // AI/ML Classification (Mock)
         const detectedCategory = (category === 'General' || !category) ? classifyGrievance(text) : category;
@@ -25,9 +28,11 @@ const submitGrievance = async (req, res) => {
             citizenId: req.user._id,
             text,
             category: detectedCategory,
+            subType: subType, // Added subType
             urgency: detectedUrgency,
             photoUrl: req.file ? `/uploads/${req.file.filename}` : null,
             jurisdiction: jurisdiction || 'General', // Fallback
+            area: area || 'Not Specified', // Added Area
             currentDepartment: detectedCategory,
             currentAuthority: assignedAuthority ? assignedAuthority._id : null,
             status: assignedAuthority ? 'Assigned' : 'Registered'
@@ -181,10 +186,57 @@ const submitFeedback = async (req, res) => {
     }
 };
 
+// @desc    Predict Category and Subtype
+// @route   POST /predict
+// @access  Private
+const predictCategory = (req, res) => {
+    fs.appendFileSync('debug.log', `PREDICT BODY: ${JSON.stringify(req.body)}\n`);
+    const { text } = req.body;
+
+    if (!text) {
+        return res.status(400).json({ message: 'NO_TEXT_FOUND' });
+    }
+
+    // Adjust path to point to backend/ml/predict.py
+    // __dirname is .../backend/src/controllers
+    const scriptPath = path.join(__dirname, '../../ml/predict.py');
+
+    const pythonProcess = spawn('python', [scriptPath, text]);
+
+    let dataString = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+        dataString += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        console.error(`Python Stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`Python process exited with code ${code}`);
+            return res.status(500).json({ message: 'Prediction process failed' });
+        }
+
+        try {
+            const result = JSON.parse(dataString);
+            if (result.error) {
+                return res.status(500).json({ message: result.error });
+            }
+            res.json(result);
+        } catch (err) {
+            console.error('Error parsing JSON:', err, 'Data:', dataString);
+            res.status(500).json({ message: 'Failed to parse prediction result' });
+        }
+    });
+};
+
 module.exports = {
     submitGrievance,
     getMyGrievances,
     getAllGrievances,
     updateGrievance,
-    submitFeedback
+    submitFeedback,
+    predictCategory
 };

@@ -6,8 +6,10 @@ const grievanceSchema = new mongoose.Schema({
     text: { type: String, required: true },
     photoUrl: { type: String },
     category: { type: String, default: 'Unclassified' }, // ML Populated
+    subType: { type: String }, // ML Populated
     urgency: { type: String, default: 'Normal' }, // ML Populated
     jurisdiction: { type: String, required: true }, // Added for Routing (Area/Zone)
+    area: { type: String, required: true }, // Added for Street/Specific Location
     currentDepartment: { type: String },
     currentAuthority: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: {

@@ -7,9 +7,12 @@ import '../styles/GrievanceForm.css';
 
 const GrievanceForm = () => {
     const [text, setText] = useState('');
-    const [category, setCategory] = useState('General');
+    const [category, setCategory] = useState(''); // Changed default to empty
+    const [subType, setSubType] = useState(''); // Added subType
     const [jurisdiction, setJurisdiction] = useState('');
+    const [area, setArea] = useState(''); // Added area
     const [isListening, setIsListening] = useState(false);
+    const [isPredicting, setIsPredicting] = useState(false); // Added predicting state
     const { language, t } = useLanguage();
     const navigate = useNavigate();
 
@@ -34,12 +37,29 @@ const GrievanceForm = () => {
         }
     };
 
+    const handleAutoPredict = async () => {
+        if (!text) return;
+        setIsPredicting(true);
+        try {
+            const res = await axios.post('http://localhost:5000/api/grievances/predict-category', { text });
+            if (res.data.department) setCategory(res.data.department);
+            if (res.data.subtype) setSubType(res.data.subtype);
+        } catch (err) {
+            console.error(err);
+            alert('Prediction failed. Please enter category manually.');
+        } finally {
+            setIsPredicting(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('text', text);
         formData.append('category', category);
+        formData.append('subType', subType);
         formData.append('jurisdiction', jurisdiction);
+        formData.append('area', area); // Added area
 
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput.files[0]) {
@@ -86,15 +106,38 @@ const GrievanceForm = () => {
                     </small>
                 </div>
 
+                <div style={{ marginTop: '10px' }}>
+                    <button
+                        type="button"
+                        onClick={handleAutoPredict}
+                        disabled={isPredicting || !text}
+                        style={{ padding: '8px 12px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+                    >
+                        {isPredicting ? 'Analyzing...' : 'Auto-detect Category'}
+                    </button>
+                </div>
+
                 <div className="form-group">
-                    <label>{t('category')} (Optional)</label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                        <option value="General">General</option>
-                        <option value="Water">Water</option>
-                        <option value="Roads">Roads</option>
-                        <option value="Electricity">Electricity</option>
-                        <option value="Sanitation">Sanitation</option>
-                    </select>
+                    <label>{t('category')}</label>
+                    <input
+                        type="text"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder="Department (e.g. Water Supply)"
+                        required
+                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>Sub-Type</label>
+                    <input
+                        type="text"
+                        value={subType}
+                        onChange={(e) => setSubType(e.target.value)}
+                        placeholder="Specific Issue (e.g. Pipe Leakage)"
+                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
                 </div>
 
                 <div className="form-group">
@@ -110,13 +153,25 @@ const GrievanceForm = () => {
                 </div>
 
                 <div className="form-group">
+                    <label>Street/Area (Specific Location)</label>
+                    <input
+                        type="text"
+                        value={area}
+                        onChange={(e) => setArea(e.target.value)}
+                        placeholder="e.g. Gandhi Street, 2nd Cross"
+                        required
+                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
+                </div>
+
+                <div className="form-group">
                     <label>Upload Photo (Optional)</label>
                     <input type="file" accept="image/*" />
                 </div>
 
                 <button type="submit" className="btn-primary">{t('submit')}</button>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };
 

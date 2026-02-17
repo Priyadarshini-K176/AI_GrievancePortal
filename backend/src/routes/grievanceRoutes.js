@@ -5,12 +5,14 @@ const {
     getMyGrievances,
     getAllGrievances,
     updateGrievance,
-    submitFeedback
+    submitFeedback,
+    predictCategory
 } = require('../controllers/grievanceController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const upload = require('../middleware/uploadMiddleware');
 
+router.post('/predict-category', protect, predictCategory);
 router.post('/', protect, upload.single('file'), submitGrievance);
 router.get('/my', protect, getMyGrievances);
 router.get('/', protect, authorize('admin', 'authority'), getAllGrievances);
