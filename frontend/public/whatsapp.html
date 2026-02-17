@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Simulator - GovPortal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e5ddd5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .phone-container {
+            width: 400px;
+            height: 100vh;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #075e54;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .header .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #ccc;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-repeat: repeat;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .msg-in {
+            align-self: flex-start;
+            background-color: white;
+            border-top-left-radius: 0;
+            margin-bottom: 5px;
+        }
+
+        .msg-out {
+            align-self: flex-end;
+            background-color: #dcf8c6;
+            border-top-right-radius: 0;
+            margin-bottom: 5px;
+        }
+
+        .meta {
+            font-size: 10px;
+            color: #999;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .input-area {
+            padding: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        button {
+            background-color: #075e54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-btn {
+            background: none;
+            color: #555;
+            padding: 5px;
+        }
+
+        #imagePreview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="phone-container">
+        <div class="header">
+            <div class="avatar"
+                style="background: url('https://cdn-icons-png.flaticon.com/512/4799/4799167.png') center/cover;"></div>
+            <div>
+                <h3>Tamil Nadu Grievance Bot 🤖</h3>
+                <span style="font-size: 12px; opacity: 0.8;">Online</span>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message msg-in">
+                Hello! 👋 I am the AI Grievance Assistant.<br>
+                Send me a photo of a complaint letter or just type your issue here.<br>
+                I will auto-file it for you!
+                <div class="meta">10:00 AM</div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="previewImage()">
+            <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+            <input type="text" id="msgInput" placeholder="Type a message...">
+            <button onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const CHAT_API = 'http://localhost:5000/api/whatsapp/webhook'; // Backend URL
+
+        function previewImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                // Just change the button color or icon to show selected
+                const btn = document.querySelector('.file-btn');
+                btn.style.color = '#075e54';
+                btn.innerHTML = '📷';
+            }
+        }
+
+        function appendMessage(text, isOut, imageSrc = null) {
+            const chat = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `message ${isOut ? 'msg-out' : 'msg-in'}`;
+
+            let content = '';
+            if (imageSrc) {
+                content += `<img src="${imageSrc}" style="max-width: 100%; border-radius: 5px; margin-bottom: 5px;">`;
+            }
+            if (text) {
+                content += `<div>${text.replace(/\n/g, '<br>')}</div>`;
+            }
+            content += `<div class="meta">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+
+            div.innerHTML = content;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const fileInput = document.getElementById('fileInput');
+            const text = input.value.trim();
+            const file = fileInput.files[0];
+
+            if (!text && !file) return;
+
+            // Display outgoing message
+            const previewUrl = file ? URL.createObjectURL(file) : null;
+            appendMessage(text, true, previewUrl);
+
+            // Prepare Payload
+            const formData = new FormData();
+            formData.append('from', '919876543210'); // Simulated Phone
+
+            if (file) {
+                formData.append('type', 'image');
+                formData.append('image', file);
+                if (text) formData.append('text', text); // caption
+            } else {
+                formData.append('type', 'text');
+                formData.append('text', text);
+            }
+
+            // Clear inputs
+            input.value = '';
+            fileInput.value = '';
+
+            // Simulate "Typing..."
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message msg-in';
+            typingDiv.innerHTML = '<i>Typing...</i>';
+            document.getElementById('chatArea').appendChild(typingDiv);
+
+            try {
+                const res = await fetch(CHAT_API, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                // Remove typing indicator
+                document.getElementById('chatArea').removeChild(typingDiv);
+
+                if (data.success) {
+                    appendMessage(data.response, false);
+                } else {
+                    appendMessage("❌ Error: " + data.error, false);
+                }
+
+            } catch (err) {
+                document.getElementById('chatArea').removeChild(typingDiv);
+                appendMessage("❌ Network Error. Is backend running?", false);
+                console.error(err);
+            }
+        }
+
+        // Allow Enter key to send
+        document.getElementById('msgInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+
+</body>
+
+</html>

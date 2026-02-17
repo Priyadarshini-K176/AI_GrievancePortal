@@ -1,0 +1,4 @@
+ultralytics
+spacy
+easyocr
+opencv-python-headless

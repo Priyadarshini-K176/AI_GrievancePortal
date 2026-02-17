@@ -7,6 +7,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Handle Twilio Form Data
 app.use(cors());
 
 // Connect to Database
@@ -24,6 +25,9 @@ app.get('/test-direct', (req, res) => res.send('Direct Route Working'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/grievances', require('./routes/grievanceRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/voice', require('./routes/voiceRoute'));
+app.use('/api/ai', require('./routes/aiRoutes')); // Local AI
+app.use('/api/whatsapp', require('./routes/whatsappRoute')); // WhatsApp Simulation
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Mic, MicOff } from 'lucide-react';
@@ -7,59 +7,120 @@ import '../styles/GrievanceForm.css';
 import { departmentData } from '../utils/dropdownData';
 
 const GrievanceForm = () => {
+    // Standard States
     const [text, setText] = useState('');
-    const [category, setCategory] = useState(''); // Changed default to empty
-    const [subType, setSubType] = useState(''); // Added subType
+    const [category, setCategory] = useState('');
+    const [subType, setSubType] = useState('');
     const [jurisdiction, setJurisdiction] = useState('');
-    const [area, setArea] = useState(''); // Added area
-    const [isListening, setIsListening] = useState(false);
-    const [isPredicting, setIsPredicting] = useState(false); // Added predicting state
-    const { language, t } = useLanguage();
-    const navigate = useNavigate();
+    const [area, setArea] = useState('');
 
-    // New State Variables
+    // Voice & Status States
+    const [isRecording, setIsRecording] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [isPredicting, setIsPredicting] = useState(false);
+
+    // Personal & Location States
     const [gender, setGender] = useState('');
     const [differentlyAbled, setDifferentlyAbled] = useState('No');
     const [petitionerType, setPetitionerType] = useState('Public');
     const [address, setAddress] = useState('');
     const [commAddress, setCommAddress] = useState('');
     const [sameAddress, setSameAddress] = useState(false);
-
     const [localBodyType, setLocalBodyType] = useState('');
     const [subDepartment, setSubDepartment] = useState('');
     const [taluk, setTaluk] = useState('');
     const [revenueDivision, setRevenueDivision] = useState('');
     const [firka, setFirka] = useState('');
     const [villagePanchayat, setVillagePanchayat] = useState('');
-    const [responsibleOfficer, setResponsibleOfficer] = useState('');
 
-    const handleSameAddressChange = (e) => {
-        setSameAddress(e.target.checked);
-        if (e.target.checked) setCommAddress(address);
-        else setCommAddress('');
-    };
+    const { language, t } = useLanguage();
+    const navigate = useNavigate();
 
-    const startListening = () => {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.lang = language === 'ta' ? 'ta-IN' : 'en-US'; // Dynamic Language
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+    // Voice Recording Refs
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
 
-            recognition.onstart = () => setIsListening(true);
-            recognition.onend = () => setIsListening(false);
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                setText(prev => prev + ' ' + transcript);
+    // --- Whisper/AssemblyAI Voice Logic ---
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunksRef.current.push(event.data);
             };
 
-            recognition.start();
-        } else {
-            alert('Browser does not support voice input.');
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                if (audioBlob.size === 0) return;
+
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'audio.webm');
+
+                try {
+                    setIsTranscribing(true);
+                    const response = await axios.post(
+                        'http://localhost:5000/api/voice/voice-to-text',
+                        formData,
+                        { headers: { 'Content-Type': 'multipart/form-data' } }
+                    );
+
+                    // 1. Update text with transcription
+                    const newText = response.data.tamil || response.data.text || "";
+                    setText(prev => (prev ? `${prev} ${newText}` : newText));
+
+                    // 2. Auto-fill category if backend detected it
+                    if (response.data.category) {
+                        setCategory(response.data.category);
+                    }
+
+                    // 3. [NEW] Auto-fill Jurisdiction & Area from Spacy
+                    if (response.data.jurisdiction && response.data.jurisdiction !== "General") {
+                        // Simple fuzzy match or direct set if it matches dropdown values
+                        const validZones = ["North Zone", "South Zone", "East Zone", "West Zone", "Central Zone"];
+                        const detected = response.data.jurisdiction;
+
+                        // Try to find a match in the dropdown
+                        const match = validZones.find(z => z.toLowerCase().includes(detected.toLowerCase()));
+                        if (match) setJurisdiction(match);
+                    }
+
+                    if (response.data.area) {
+                        setArea(prev => prev || response.data.area);
+                    }
+                } catch (err) {
+                    console.error('Transcription error:', err);
+                    alert('Voice processing failed. Please try typing.');
+                } finally {
+                    setIsTranscribing(false);
+                    // Crucial: Stop the mic hardware
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+
+            // Auto-stop after 6 seconds to prevent massive files
+            setTimeout(() => {
+                if (mediaRecorder.state !== 'inactive') stopRecording();
+            }, 6000);
+
+        } catch (err) {
+            alert('Please allow microphone access to use voice input.');
         }
     };
 
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    // --- Existing Handlers ---
     const handleAutoPredict = async () => {
         if (!text) return;
         setIsPredicting(true);
@@ -68,41 +129,118 @@ const GrievanceForm = () => {
             if (res.data.department) setCategory(res.data.department);
             if (res.data.subtype) setSubType(res.data.subtype);
         } catch (err) {
-            console.error(err);
-            alert('Prediction failed. Please enter category manually.');
+            alert('Auto-detection failed.');
         } finally {
             setIsPredicting(false);
         }
     };
 
+    const [file, setFile] = useState(null);
+    const [analyzing, setAnalyzing] = useState(false);
+
+    const handleFileChange = (e) => {
+        setFile(e.target.files[0]);
+    };
+
+    const handleAnalyzeImage = async () => {
+        if (!file) return alert("Please select an image first!");
+
+        setAnalyzing(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await axios.post('http://localhost:5000/api/ai/analyze-image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            console.log("AI Response:", res.data);
+
+            if (res.data.error) {
+                alert(`AI Error: ${res.data.error}`);
+                return;
+            }
+
+            const { category, description, detected_objects } = res.data;
+
+            if (!description) {
+                alert("AI did not return a description. Raw response: " + JSON.stringify(res.data));
+                return;
+            }
+
+            // Auto-fill form
+            setCategory(prev => category || prev);
+            setText(prev => (prev ? `${prev}\n\n[AI Analysis]: ${description}` : `[AI Analysis]: ${description}`));
+
+            alert(`✨ AI Detected: ${category}\nObjects: ${detected_objects?.join(', ')}`);
+        } catch (err) {
+            console.error(err);
+            alert("AI Analysis failed (Check console for details)");
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+    const handleOCR = async () => {
+        if (!file) return alert("Please select an image of the letter first!");
+
+        setAnalyzing(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await axios.post('http://localhost:5000/api/ai/ocr', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            const { text, description } = res.data;
+
+            if (!text) {
+                alert("OCR did not find any text.");
+                return;
+            }
+
+            // Auto-fill form
+            setText(prev => (prev ? `${prev}\n\n[OCR Extracted]: ${text}` : `[OCR Extracted]: ${text}`));
+            alert(`📝 Text Extracted!\n\n${description}`);
+        } catch (err) {
+            console.error(err);
+            alert("OCR Failed (Check console)");
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const handleSameAddressChange = (e) => {
+        setSameAddress(e.target.checked);
+        if (e.target.checked) setCommAddress(address);
+        else setCommAddress('');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData();
+        // Append text & dropdowns
         formData.append('text', text);
         formData.append('category', category);
         formData.append('subType', subType);
         formData.append('jurisdiction', jurisdiction);
-
-        formData.append('area', area); // Added area
-
-        // Append New Fields
+        formData.append('area', area);
+        // Append Personal Details
         formData.append('gender', gender);
         formData.append('differentlyAbled', differentlyAbled);
         formData.append('petitionerType', petitionerType);
         formData.append('address', address);
         formData.append('communicationAddress', commAddress);
+        // Append Location Details
         formData.append('localBodyType', localBodyType);
         formData.append('subDepartment', subDepartment);
         formData.append('taluk', taluk);
         formData.append('revenueDivision', revenueDivision);
         formData.append('firka', firka);
         formData.append('villagePanchayat', villagePanchayat);
-        formData.append('responsibleOfficer', responsibleOfficer);
 
         const fileInput = document.querySelector('input[type="file"]');
-        if (fileInput.files[0]) {
-            formData.append('file', fileInput.files[0]);
-        }
+        if (fileInput?.files[0]) formData.append('file', fileInput.files[0]);
 
         try {
             await axios.post('http://localhost:5000/api/grievances', formData, {
@@ -110,7 +248,7 @@ const GrievanceForm = () => {
             });
             navigate('/dashboard');
         } catch (err) {
-            alert('Failed to submit grievance');
+            alert('Submission failed. Check your connection.');
         }
     };
 
@@ -182,28 +320,7 @@ const GrievanceForm = () => {
                             <input type="text" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Gandhi Street" required />
                         </div>
                     </div>
-
-                    <div className="form-row">
-                        <div className="form-group half">
-                            <label>{t('taluk')}</label>
-                            <input type="text" value={taluk} onChange={(e) => setTaluk(e.target.value)} placeholder="-None-" />
-                        </div>
-                        <div className="form-group half">
-                            <label>{t('revDiv')}</label>
-                            <input type="text" value={revenueDivision} onChange={(e) => setRevenueDivision(e.target.value)} placeholder="-None-" />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group half">
-                            <label>{t('firka')}</label>
-                            <input type="text" value={firka} onChange={(e) => setFirka(e.target.value)} placeholder="-None-" />
-                        </div>
-                        <div className="form-group half">
-                            <label>{t('village')}</label>
-                            <input type="text" value={villagePanchayat} onChange={(e) => setVillagePanchayat(e.target.value)} placeholder="-None-" />
-                        </div>
-                    </div>
+                    {/* Add Taluk/Revenue Div/Village inputs here if needed */}
                 </div>
 
                 {/* SECTION 3: Grievance Details */}
@@ -217,34 +334,74 @@ const GrievanceForm = () => {
                                 onChange={(e) => setText(e.target.value)}
                                 rows="5"
                                 required
-                                placeholder="Start speaking or typing..."
+                                placeholder={isTranscribing ? "Processing your voice..." : "Type or use the mic..."}
+                                disabled={isTranscribing}
                             ></textarea>
                             <div className="voice-controls">
-                                <button type="button" className={`mic-btn ${isListening ? 'listening' : ''}`} onClick={startListening} title="Start Voice Input">
-                                    {isListening ? <MicOff /> : <Mic />}
+                                <button
+                                    type="button"
+                                    className={`mic-btn ${isRecording ? 'listening' : ''}`}
+                                    onClick={isRecording ? stopRecording : startRecording}
+                                    disabled={isTranscribing}
+                                    title="Voice Input"
+                                >
+                                    {isRecording ? <MicOff /> : <Mic />}
                                 </button>
                                 {text && (
-                                    <button type="button" className="clear-btn" onClick={() => setText('')} title="Clear Text">
-                                        ✕
-                                    </button>
+                                    <button type="button" className="clear-btn" onClick={() => setText('')}>✕</button>
                                 )}
                             </div>
                         </div>
-                        <small className={`voice-status ${isListening ? 'active' : ''}`}>
-                            {isListening ? (language === 'ta' ? 'கேட்கிறது...' : 'Listening...') : t('mic')}
+                        <small className={`voice-status ${isRecording ? 'active' : ''}`}>
+                            {isRecording ? (language === 'ta' ? 'கேட்கிறது...' : 'Recording...') :
+                                isTranscribing ? 'Converting voice to text...' : t('mic')}
                         </small>
                     </div>
 
-                    <div style={{ marginTop: '10px', marginBottom: '20px' }}>
+                    <div style={{ margin: '15px 0' }}>
                         <button
                             type="button"
                             onClick={handleAutoPredict}
-                            disabled={isPredicting || !text}
-                            style={{ padding: '8px 12px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+                            disabled={isPredicting || !text || isTranscribing}
+                            className="predict-btn"
                         >
                             {isPredicting ? t('analyzing') : t('autoDetect')}
                         </button>
                     </div>
+
+                    {/* Image Upload with AI Analysis */}
+                    <div className="form-group">
+                        <label>{t('uploadPhoto')}</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg"
+                                onChange={handleFileChange}
+                                className="file-input"
+                            />
+                            <button
+                                type="button"
+                                className="btn-ai-analyze"
+                                onClick={handleAnalyzeImage}
+                                disabled={analyzing || !file}
+                                title={!file ? "Upload an image first" : "Find Objects (Cars, Garbage)"}
+                            >
+                                {analyzing ? '🔍 Analyzing...' : '✨ AI Analyze'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-ai-analyze btn-ocr"
+                                onClick={handleOCR}
+                                disabled={analyzing || !file}
+                                title={!file ? "Upload an image first" : "Read Text from Letter"}
+                                style={{ background: 'linear-gradient(135deg, #FF6B6B 0%, #EE5D5D 100%)' }}
+                            >
+                                📝 Scan Letter
+                            </button>
+                        </div>
+                    </div>
+
+
 
                     <div className="form-group">
                         <label>{t('dept')}</label>
@@ -252,7 +409,7 @@ const GrievanceForm = () => {
                             value={category}
                             onChange={(e) => {
                                 setCategory(e.target.value);
-                                setSubType(''); // Reset subType when category changes
+                                setSubType('');
                             }}
                             required
                         >
@@ -261,11 +418,6 @@ const GrievanceForm = () => {
                                 <option key={index} value={dept.name}>{dept.name}</option>
                             ))}
                         </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label>{t('subDept')}</label>
-                        <input type="text" value={subDepartment} onChange={(e) => setSubDepartment(e.target.value)} placeholder="-None-" />
                     </div>
 
                     <div className="form-group">
@@ -283,10 +435,6 @@ const GrievanceForm = () => {
                         </select>
                     </div>
 
-
-
-                    {/* Removed Responsible Officer - Auto-assigned by system */}
-
                     <div className="form-group">
                         <label>{t('jurisdiction')}</label>
                         <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} required>
@@ -298,15 +446,12 @@ const GrievanceForm = () => {
                             <option value="Central Zone">Central Zone</option>
                         </select>
                     </div>
-
-                    <div className="form-group">
-                        <label>{t('uploadPhoto')}</label>
-                        <input type="file" accept="image/*" />
-                    </div>
                 </div>
 
-                <button type="submit" className="btn-primary">{t('submit')}</button>
-            </form>
+                <button type="submit" className="btn-primary" disabled={isTranscribing || isRecording}>
+                    {t('submit')}
+                </button>
+            </form >
         </div >
     );
 };
