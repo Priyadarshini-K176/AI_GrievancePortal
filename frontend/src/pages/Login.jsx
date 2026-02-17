@@ -13,8 +13,11 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await login(phone, password);
-            navigate('/dashboard'); // Default to citizen dashboard, check role to redirect ideally
+            const user = await login(phone, password);
+            // Redirect based on role
+            if (user.role === 'admin') navigate('/admin/dashboard');
+            else if (user.role === 'authority') navigate('/authority/dashboard');
+            else navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid credentials');
         }

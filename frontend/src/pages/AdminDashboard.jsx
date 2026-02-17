@@ -1,12 +1,16 @@
 import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import { departmentData } from '../utils/dropdownData';
+import { AnalyticsChart } from '../components/AnalyticsChart';
 import '../styles/Dashboard.css';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('authorities');
     const [authorities, setAuthorities] = useState([]);
     const [grievances, setGrievances] = useState([]);
+    const [analyticsData, setAnalyticsData] = useState(null);
+    const [analyticsError, setAnalyticsError] = useState(null); // New state for error
     const [expandedRow, setExpandedRow] = useState(null); // For view details
     const [formData, setFormData] = useState({
         name: '',
@@ -29,6 +33,27 @@ const AdminDashboard = () => {
         }
     }, [token]);
 
+    useEffect(() => {
+        if (activeTab === 'analytics' && !analyticsData && token) {
+            fetchAnalytics();
+        }
+    }, [activeTab, token]);
+
+    const fetchAnalytics = async () => {
+        try {
+            setAnalyticsError(null); // Reset error
+            console.log("Fetching analytics...");
+            const res = await axios.get('http://localhost:5002/api/admin/analytics', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            console.log("Analytics Data Received:", res.data);
+            setAnalyticsData(res.data);
+        } catch (err) {
+            console.error("Analytics Fetch Error", err);
+            setAnalyticsError(err.response?.data?.message || err.message || 'Failed to load analytics');
+        }
+    };
+
     const fetchData = async () => {
         const config = {
             headers: {
@@ -36,9 +61,9 @@ const AdminDashboard = () => {
             }
         };
         try {
-            const authRes = await axios.get('http://localhost:5000/api/admin/authorities', config);
+            const authRes = await axios.get('http://localhost:5002/api/admin/authorities', config);
             setAuthorities(authRes.data);
-            const grievRes = await axios.get('http://localhost:5000/api/grievances', config); // Admin sees all
+            const grievRes = await axios.get('http://localhost:5002/api/grievances', config); // Admin sees all
             setGrievances(grievRes.data);
         } catch (err) {
             console.error(err);
@@ -57,7 +82,7 @@ const AdminDashboard = () => {
                     Authorization: `Bearer ${token}`
                 }
             };
-            await axios.post('http://localhost:5000/api/admin/create-authority', {
+            await axios.post('http://localhost:5002/api/admin/create-authority', {
                 ...formData,
                 role: 'authority'
             }, config);
@@ -65,7 +90,7 @@ const AdminDashboard = () => {
             setFormData({ name: '', phone: '', password: '', department: '', jurisdiction: '' });
             fetchData(); // Refresh list
         } catch (err) {
-            alert('Failed to create authority');
+            alert(err.response?.data?.message || 'Failed to create authority');
         }
     };
 
@@ -75,6 +100,7 @@ const AdminDashboard = () => {
             <div className="admin-tabs">
                 <button className={activeTab === 'authorities' ? 'active' : ''} onClick={() => setActiveTab('authorities')}>Manage Authorities</button>
                 <button className={activeTab === 'grievances' ? 'active' : ''} onClick={() => setActiveTab('grievances')}>View All Grievances</button>
+                <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>📊 Analytics</button>
             </div>
 
             {activeTab === 'authorities' && (
@@ -87,10 +113,9 @@ const AdminDashboard = () => {
                             <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Password" required />
                             <select name="department" value={formData.department} onChange={handleChange} required>
                                 <option value="">Select Dept</option>
-                                <option value="Water">Water</option>
-                                <option value="Roads">Roads</option>
-                                <option value="Electricity">Electricity</option>
-                                <option value="Sanitation">Sanitation</option>
+                                {departmentData.map((dept, index) => (
+                                    <option key={index} value={dept.name}>{dept.name}</option>
+                                ))}
                             </select>
                             <select name="jurisdiction" value={formData.jurisdiction} onChange={handleChange} required>
                                 <option value="">Select Zone</option>
@@ -104,7 +129,7 @@ const AdminDashboard = () => {
                         </form>
                     </div>
                     <h3>Existing Authorities</h3>
-                    <table className="data-table">
+                    <table className="modern-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -130,7 +155,7 @@ const AdminDashboard = () => {
             {activeTab === 'grievances' && (
                 <div className="admin-section">
                     <h3>All Grievances (Global View)</h3>
-                    <table className="data-table">
+                    <table className="modern-table">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -155,7 +180,7 @@ const AdminDashboard = () => {
                                             <td>{g.currentDepartment}</td>
                                             <td>
                                                 {g.photoUrl ? (
-                                                    <a href={`http://localhost:5000${g.photoUrl}`} target="_blank" rel="noopener noreferrer">View</a>
+                                                    <a href={`http://localhost:5002${g.photoUrl}`} target="_blank" rel="noopener noreferrer">View</a>
                                                 ) : '-'}
                                             </td>
                                             <td>{g.jurisdiction}</td>
@@ -222,6 +247,44 @@ const AdminDashboard = () => {
                     </table>
                 </div>
             )}
+
+
+            {
+                activeTab === 'analytics' && (
+                    <div className="admin-section">
+                        <h3>Portal Analytics & Insights</h3>
+                        {analyticsData ? (
+                            <>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                                    <div className="stats-pill" style={{ textAlign: 'center', background: '#e0f2fe', color: '#0369a1' }}>
+                                        <h3>{analyticsData.total}</h3> <small>Total Grievances</small>
+                                    </div>
+                                    <div className="stats-pill" style={{ textAlign: 'center', background: '#fef3c7', color: '#b45309' }}>
+                                        <h3>{analyticsData.pending}</h3> <small>Pending</small>
+                                    </div>
+                                    <div className="stats-pill" style={{ textAlign: 'center', background: '#dcfce7', color: '#15803d' }}>
+                                        <h3>{analyticsData.resolved}</h3> <small>Resolved</small>
+                                    </div>
+                                    <div className="stats-pill" style={{ textAlign: 'center', background: '#fee2e2', color: '#b91c1c' }}>
+                                        <h3>{analyticsData.escalated}</h3> <small>Escalated</small>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+                                    <AnalyticsChart title="Complaints by Category (Department)" data={analyticsData.byCategory} />
+                                    <AnalyticsChart title="Urgency Distribution" data={analyticsData.byUrgency} type="pie" />
+                                    <AnalyticsChart title="Status Distribution" data={analyticsData.byStatus} type="pie" />
+                                    <AnalyticsChart title="Zone-wise Complaints" data={analyticsData.byZone} />
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <p>{analyticsError ? <span style={{ color: 'red' }}>Error: {analyticsError}</span> : 'Loading analytics...'}</p>
+                                <button onClick={fetchAnalytics} style={{ marginTop: '10px', padding: '5px 10px' }}>Retry / Refresh</button>
+                            </div>
+                        )}
+                    </div>
+                )}
         </div>
     );
 };

@@ -15,21 +15,26 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
     const { name, phone, password, role, department, jurisdiction, otp } = req.body;
 
-    // Basic validation
-    if (!name || !phone || !password || !otp) {
-        return res.status(400).json({ message: 'Please add all fields including OTP' });
-    }
-
     try {
+        // Check if user exists
         const userExists = await User.findOne({ phone });
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Verify OTP
-        const otpRecord = await Otp.findOne({ phone, otp });
-        if (!otpRecord) {
-            return res.status(400).json({ message: 'Invalid or Expired OTP' });
+        // Verify OTP (Skip if created by Admin)
+        if (req.user && req.user.role === 'admin' && role === 'authority') {
+            // Admin creating authority - No OTP needed
+        } else {
+            if (!otp) {
+                return res.status(400).json({ message: 'Please add all fields including OTP' });
+            }
+            const otpRecord = await Otp.findOne({ phone, otp });
+            if (!otpRecord) {
+                return res.status(400).json({ message: 'Invalid or Expired OTP' });
+            }
+            // Delete OTP record after successful registration
+            await Otp.deleteOne({ _id: otpRecord._id });
         }
 
         // Create User
@@ -43,8 +48,7 @@ const registerUser = async (req, res) => {
             phoneVerified: true
         });
 
-        // Delete OTP record after successful registration
-        await Otp.deleteOne({ _id: otpRecord._id });
+
 
         if (user) {
             res.status(201).json({

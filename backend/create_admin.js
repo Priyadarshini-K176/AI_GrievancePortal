@@ -7,8 +7,8 @@ const createAdmin = async () => {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('MongoDB Connected...');
 
-        const adminPhone = 'admin12345'; // Simple phone for admin
-        const adminPassword = 'adminpassword';
+        const adminPhone = 'admin'; // Using 'admin' as phone for easy login
+        const adminPassword = '123456';
 
         // Check if exists
         const exists = await User.findOne({ phone: adminPhone });

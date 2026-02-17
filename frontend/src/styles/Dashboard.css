@@ -394,3 +394,151 @@ tr:hover td {
     margin-bottom: 4px;
     border-bottom: 1px dashed #e2e8f0;
 }
+
+/* --- NEW COMPONENT STYLES --- */
+
+/* Modern Table */
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table th {
+    background: #f8fafc;
+    padding: 1rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #64748b;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.modern-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+/* Priority Badges */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.priority-high,
+.priority-critical {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.priority-medium,
+.priority-normal {
+    background-color: #fefce8;
+    color: #eab308;
+}
+
+.priority-low {
+    background-color: #f0fdf4;
+    color: #22c55e;
+}
+
+/* Modal Layout */
+.large-modal {
+    max-width: 800px;
+    width: 90%;
+    padding: 0;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: #2c5282;
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-body.with-sidebar {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    height: 500px;
+}
+
+.modal-main {
+    padding: 1.5rem;
+    overflow-y: auto;
+    border-right: 1px solid #e2e8f0;
+}
+
+.modal-sidebar {
+    padding: 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-sidebar textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.btn-status {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-status:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-status.action-taken {
+    background-color: #805ad5;
+}
+
+.btn-status.resolved {
+    background-color: #059669;
+}
+
+.evidence-section img {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
+
+.stats-pill {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}

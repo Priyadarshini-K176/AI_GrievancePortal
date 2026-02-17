@@ -17,6 +17,9 @@ app.get('/', (req, res) => {
     res.send('Tamil Nadu Grievance Portal API is running...');
 });
 
+// Direct Test Route
+app.get('/test-direct', (req, res) => res.send('Direct Route Working'));
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/grievances', require('./routes/grievanceRoutes'));
